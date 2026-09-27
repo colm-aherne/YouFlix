@@ -1,0 +1,268 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User viewer profile within an account for personalized viewing history and lists.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Auth UID of the owner."
+        },
+        "name": {
+          "type": "string",
+          "description": "Display name of the profile.",
+          "minLength": 1,
+          "maxLength": 50
+        },
+        "avatar": {
+          "type": "string",
+          "description": "Selected avatar identifier.",
+          "maxLength": 100
+        },
+        "isKid": {
+          "type": "boolean",
+          "description": "Whether this profile is in Kids mode."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Creation timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Last update timestamp."
+        }
+      },
+      "required": ["userId", "name", "avatar"]
+    },
+    "CustomPlaylist": {
+      "title": "CustomPlaylist",
+      "description": "Category-based playlist synchronized across devices.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Auth UID of the creator."
+        },
+        "profileId": {
+          "type": "string",
+          "description": "Profile ID associated with this playlist.",
+          "maxLength": 128
+        },
+        "title": {
+          "type": "string",
+          "description": "Title of the playlist.",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the playlist category.",
+          "maxLength": 500
+        },
+        "category": {
+          "type": "string",
+          "description": "Category tag.",
+          "maxLength": 50
+        },
+        "isPublic": {
+          "type": "boolean",
+          "description": "Whether the playlist is publicly accessible."
+        },
+        "videoCount": {
+          "type": "number",
+          "description": "Number of videos in the playlist."
+        },
+        "coverVideoId": {
+          "type": "string",
+          "description": "YouTube video ID used as cover.",
+          "maxLength": 50
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Creation timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Last update timestamp."
+        }
+      },
+      "required": ["userId", "title", "category"]
+    },
+    "WatchProgress": {
+      "title": "WatchProgress",
+      "description": "Real-time synced playback progress for Continue Watching shelf.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Auth UID of user."
+        },
+        "profileId": {
+          "type": "string",
+          "description": "Profile ID.",
+          "maxLength": 128
+        },
+        "videoId": {
+          "type": "string",
+          "description": "YouTube video ID.",
+          "maxLength": 50
+        },
+        "title": {
+          "type": "string",
+          "description": "Video title.",
+          "maxLength": 200
+        },
+        "channelTitle": {
+          "type": "string",
+          "description": "Channel title.",
+          "maxLength": 100
+        },
+        "duration": {
+          "type": "number",
+          "description": "Total duration in seconds."
+        },
+        "currentTime": {
+          "type": "number",
+          "description": "Current playback position in seconds."
+        },
+        "progressPercent": {
+          "type": "number",
+          "description": "Percentage watched."
+        },
+        "thumbnailUrl": {
+          "type": "string",
+          "description": "Thumbnail URL.",
+          "maxLength": 500
+        },
+        "category": {
+          "type": "string",
+          "description": "Video category.",
+          "maxLength": 50
+        },
+        "completed": {
+          "type": "boolean",
+          "description": "Whether video has finished."
+        },
+        "lastWatchedAt": {
+          "type": "string",
+          "description": "Timestamp when last watched."
+        }
+      },
+      "required": ["userId", "profileId", "videoId", "currentTime"]
+    },
+    "WatchlistItem": {
+      "title": "WatchlistItem",
+      "description": "User's My List synchronized across devices.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Auth UID."
+        },
+        "profileId": {
+          "type": "string",
+          "description": "Profile ID.",
+          "maxLength": 128
+        },
+        "videoId": {
+          "type": "string",
+          "description": "YouTube video ID.",
+          "maxLength": 50
+        },
+        "title": {
+          "type": "string",
+          "description": "Video title.",
+          "maxLength": 200
+        },
+        "channelTitle": {
+          "type": "string",
+          "description": "Channel title.",
+          "maxLength": 100
+        },
+        "duration": {
+          "type": "number",
+          "description": "Duration in seconds."
+        },
+        "thumbnailUrl": {
+          "type": "string",
+          "description": "Thumbnail URL.",
+          "maxLength": 500
+        },
+        "category": {
+          "type": "string",
+          "description": "Category.",
+          "maxLength": 50
+        },
+        "addedAt": {
+          "type": "string",
+          "description": "Timestamp when added."
+        }
+      },
+      "required": ["userId", "profileId", "videoId", "title"]
+    },
+    "VideoRating": {
+      "title": "VideoRating",
+      "description": "Thumbs up/down feedback.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Auth UID."
+        },
+        "profileId": {
+          "type": "string",
+          "description": "Profile ID.",
+          "maxLength": 128
+        },
+        "videoId": {
+          "type": "string",
+          "description": "YouTube video ID.",
+          "maxLength": 50
+        },
+        "rating": {
+          "type": "string",
+          "description": "Rating type: like or dislike",
+          "enum": ["like", "dislike", "loved"]
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Update timestamp."
+        }
+      },
+      "required": ["userId", "profileId", "videoId", "rating"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}/profiles/{profileId}": {
+      "schema": {
+        "$ref": "UserProfile"
+      },
+      "description": "Viewer profiles for a user account."
+    },
+    "/users/{userId}/playlists/{playlistId}": {
+      "schema": {
+        "$ref": "CustomPlaylist"
+      },
+      "description": "User's custom category playlists."
+    },
+    "/users/{userId}/watchProgress/{progressId}": {
+      "schema": {
+        "$ref": "WatchProgress"
+      },
+      "description": "Synced playback progress for Continue Watching shelf across all devices."
+    },
+    "/users/{userId}/watchlist/{watchId}": {
+      "schema": {
+        "$ref": "WatchlistItem"
+      },
+      "description": "User's synchronized My List items."
+    },
+    "/users/{userId}/ratings/{ratingId}": {
+      "schema": {
+        "$ref": "VideoRating"
+      },
+      "description": "User's video ratings."
+    }
+  }
+}

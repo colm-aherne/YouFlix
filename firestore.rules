@@ -1,0 +1,160 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Hardened Primitives
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // Helper: UserProfile validation
+    function isValidUserProfile(data) {
+      return data.keys().hasAll(['userId', 'name', 'avatar']) &&
+             data.keys().hasOnly(['userId', 'name', 'avatar', 'isKid', 'createdAt', 'updatedAt']) &&
+             data.userId == request.auth.uid &&
+             data.name is string && data.name.size() >= 1 && data.name.size() <= 50 &&
+             data.avatar is string && data.avatar.size() <= 100 &&
+             (!('isKid' in data) || data.isKid is bool) &&
+             (!('createdAt' in data) || (data.createdAt is string && data.createdAt.size() <= 50)) &&
+             (!('updatedAt' in data) || (data.updatedAt is string && data.updatedAt.size() <= 50));
+    }
+
+    // Helper: CustomPlaylist validation
+    function isValidCustomPlaylist(data) {
+      return data.keys().hasAll(['userId', 'title', 'category']) &&
+             data.keys().hasOnly(['userId', 'profileId', 'title', 'description', 'category', 'isPublic', 'videoCount', 'coverVideoId', 'createdAt', 'updatedAt']) &&
+             data.userId == request.auth.uid &&
+             data.title is string && data.title.size() >= 1 && data.title.size() <= 100 &&
+             data.category is string && data.category.size() <= 50 &&
+             (!('profileId' in data) || (data.profileId is string && data.profileId.size() <= 128)) &&
+             (!('description' in data) || (data.description is string && data.description.size() <= 500)) &&
+             (!('isPublic' in data) || data.isPublic is bool) &&
+             (!('videoCount' in data) || (data.videoCount is number && data.videoCount >= 0 && data.videoCount <= 1000)) &&
+             (!('coverVideoId' in data) || (data.coverVideoId is string && data.coverVideoId.size() <= 50)) &&
+             (!('createdAt' in data) || (data.createdAt is string && data.createdAt.size() <= 50)) &&
+             (!('updatedAt' in data) || (data.updatedAt is string && data.updatedAt.size() <= 50));
+    }
+
+    // Helper: WatchProgress validation
+    function isValidWatchProgress(data) {
+      return data.keys().hasAll(['userId', 'profileId', 'videoId', 'currentTime']) &&
+             data.keys().hasOnly(['userId', 'profileId', 'videoId', 'title', 'channelTitle', 'duration', 'currentTime', 'progressPercent', 'thumbnailUrl', 'category', 'completed', 'lastWatchedAt']) &&
+             data.userId == request.auth.uid &&
+             data.profileId is string && data.profileId.size() <= 128 &&
+             data.videoId is string && data.videoId.size() <= 50 &&
+             data.currentTime is number && data.currentTime >= 0 &&
+             (!('title' in data) || (data.title is string && data.title.size() <= 200)) &&
+             (!('channelTitle' in data) || (data.channelTitle is string && data.channelTitle.size() <= 100)) &&
+             (!('duration' in data) || (data.duration is number && data.duration >= 0)) &&
+             (!('progressPercent' in data) || (data.progressPercent is number && data.progressPercent >= 0 && data.progressPercent <= 100)) &&
+             (!('thumbnailUrl' in data) || (data.thumbnailUrl is string && data.thumbnailUrl.size() <= 500)) &&
+             (!('category' in data) || (data.category is string && data.category.size() <= 50)) &&
+             (!('completed' in data) || data.completed is bool) &&
+             (!('lastWatchedAt' in data) || (data.lastWatchedAt is string && data.lastWatchedAt.size() <= 50));
+    }
+
+    // Helper: WatchlistItem validation
+    function isValidWatchlistItem(data) {
+      return data.keys().hasAll(['userId', 'profileId', 'videoId', 'title']) &&
+             data.keys().hasOnly(['userId', 'profileId', 'videoId', 'title', 'channelTitle', 'duration', 'thumbnailUrl', 'category', 'addedAt']) &&
+             data.userId == request.auth.uid &&
+             data.profileId is string && data.profileId.size() <= 128 &&
+             data.videoId is string && data.videoId.size() <= 50 &&
+             data.title is string && data.title.size() <= 200 &&
+             (!('channelTitle' in data) || (data.channelTitle is string && data.channelTitle.size() <= 100)) &&
+             (!('duration' in data) || (data.duration is number && data.duration >= 0)) &&
+             (!('thumbnailUrl' in data) || (data.thumbnailUrl is string && data.thumbnailUrl.size() <= 500)) &&
+             (!('category' in data) || (data.category is string && data.category.size() <= 50)) &&
+             (!('addedAt' in data) || (data.addedAt is string && data.addedAt.size() <= 50));
+    }
+
+    // Helper: VideoRating validation
+    function isValidVideoRating(data) {
+      return data.keys().hasAll(['userId', 'profileId', 'videoId', 'rating']) &&
+             data.keys().hasOnly(['userId', 'profileId', 'videoId', 'rating', 'updatedAt']) &&
+             data.userId == request.auth.uid &&
+             data.profileId is string && data.profileId.size() <= 128 &&
+             data.videoId is string && data.videoId.size() <= 50 &&
+             (data.rating == 'like' || data.rating == 'dislike' || data.rating == 'loved') &&
+             (!('updatedAt' in data) || (data.updatedAt is string && data.updatedAt.size() <= 50));
+    }
+
+    // Match users structure
+    match /users/{userId} {
+      allow get, list: if isOwner(userId);
+      allow create, update: if isOwner(userId);
+      allow delete: if isOwner(userId);
+
+      // Profiles Subcollection
+      match /profiles/{profileId} {
+        allow get: if isOwner(userId) && isValidId(profileId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(profileId) && isValidUserProfile(incoming());
+        allow update: if isOwner(userId) && isValidId(profileId) && isValidUserProfile(incoming()) &&
+                         incoming().userId == existing().userId;
+        allow delete: if isOwner(userId) && isValidId(profileId);
+      }
+
+      // Custom Playlists Subcollection
+      match /playlists/{playlistId} {
+        allow get: if (isOwner(userId) || resource.data.isPublic == true) && isValidId(playlistId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(playlistId) && isValidCustomPlaylist(incoming());
+        allow update: if isOwner(userId) && isValidId(playlistId) && isValidCustomPlaylist(incoming()) &&
+                         incoming().userId == existing().userId;
+        allow delete: if isOwner(userId) && isValidId(playlistId);
+      }
+
+      // Watch Progress Subcollection (Syncs Continue Watching shelf across devices)
+      match /watchProgress/{progressId} {
+        allow get: if isOwner(userId) && isValidId(progressId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(progressId) && isValidWatchProgress(incoming());
+        allow update: if isOwner(userId) && isValidId(progressId) && isValidWatchProgress(incoming()) &&
+                         incoming().userId == existing().userId;
+        allow delete: if isOwner(userId) && isValidId(progressId);
+      }
+
+      // Watchlist Subcollection (My List)
+      match /watchlist/{watchId} {
+        allow get: if isOwner(userId) && isValidId(watchId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(watchId) && isValidWatchlistItem(incoming());
+        allow update: if isOwner(userId) && isValidId(watchId) && isValidWatchlistItem(incoming()) &&
+                         incoming().userId == existing().userId;
+        allow delete: if isOwner(userId) && isValidId(watchId);
+      }
+
+      // Ratings Subcollection
+      match /ratings/{ratingId} {
+        allow get: if isOwner(userId) && isValidId(ratingId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(ratingId) && isValidVideoRating(incoming());
+        allow update: if isOwner(userId) && isValidId(ratingId) && isValidVideoRating(incoming()) &&
+                         incoming().userId == existing().userId;
+        allow delete: if isOwner(userId) && isValidId(ratingId);
+      }
+    }
+  }
+}
